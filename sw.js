@@ -18,7 +18,7 @@ self.addEventListener('push', e => {
     const isCall = d.kind === 'call';
     await self.registration.showNotification(d.title || 'امون', {
       body: d.body || '', tag: d.tag, renotify: true, icon: 'icon-192.png', badge: 'icon-192.png', dir: 'rtl', lang: 'fa',
-      requireInteraction: isCall, vibrate: isCall ? [400, 200, 400, 200, 400] : [150],
+      requireInteraction: isCall, silent: false, timestamp: Date.now(), vibrate: isCall ? [500, 200, 500, 200, 500, 200, 500] : [150],
       data: d, actions: isCall ? [{ action: 'open', title: 'پاسخ' }] : []
     });
   })());

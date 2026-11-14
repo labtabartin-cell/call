@@ -443,11 +443,23 @@ function startRing(kind) {
   stopRing();
   try {
     ringAC = ringAC || new (window.AudioContext || window.webkitAudioContext)(); ringAC.resume();
-    const beep = () => { const o = ringAC.createOscillator(), g = ringAC.createGain(); o.frequency.value = kind === 'in' ? 880 : 425; g.gain.value = .07; o.connect(g); g.connect(ringAC.destination); o.start(); o.stop(ringAC.currentTime + (kind === 'in' ? .45 : 1)); if (kind === 'in' && navigator.vibrate) navigator.vibrate(350); };
-    beep(); ringT = setInterval(beep, kind === 'in' ? 1300 : 3000);
+    const tone = (f, at, dur, vol) => { const o = ringAC.createOscillator(), g = ringAC.createGain(); o.type = 'sine'; o.frequency.value = f; const t = ringAC.currentTime + at;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .03); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g); g.connect(ringAC.destination); o.start(t); o.stop(t + dur + .05); };
+    const beep = () => {
+      if (kind === 'in') { tone(784, 0, .22, .5); tone(988, .25, .22, .5); tone(784, .6, .22, .5); tone(988, .85, .22, .5); if (navigator.vibrate) navigator.vibrate([300, 150, 300]); }
+      else tone(425, 0, 1, .15);
+    };
+    beep(); ringT = setInterval(beep, kind === 'in' ? 2200 : 3000);
+    if (document.hidden && !titleT) { let on = false; titleT = setInterval(() => { document.title = (on = !on) ? '📞 تماس ورودی!' : 'امون'; }, 800); }
   } catch { }
 }
-const stopRing = () => { clearInterval(ringT); ringT = null; };
+let titleT;
+const stopRing = () => { clearInterval(ringT); ringT = null; clearInterval(titleT); titleT = null; document.title = 'امون'; };
+/* مرورگر بدون لمس کاربر اجازه‌ی صدا نمی‌دهد؛ با اولین لمس، صدا آزاد می‌شود و اگر تماسی در حال زنگ است پخش می‌شود */
+function unlockAudio() {
+  try { ringAC = ringAC || new (window.AudioContext || window.webkitAudioContext)(); ringAC.resume().then(() => { if (CALL && CALL.status === 'ringing' && !ringT) startRing(CALL.dir); }); } catch { }
+}
+['pointerdown', 'touchstart', 'keydown', 'click'].forEach(ev => document.addEventListener(ev, unlockAudio, { passive: true }));
 const elapsed = () => { const s = Math.max(0, Math.floor((Date.now() - CALL.t0) / 1000)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
 
 function renderCallUI() {
@@ -494,6 +506,8 @@ async function placeCall(to) {
   CALL.id = data.id;
   try { await openChannel(CALL.id); } catch (e) { await rpcUpd('cancelled'); cleanup(); return toast(errText(e)); }
   renderCallUI(); startRing('out'); pushApi('call', CALL.id);
+  /* نوتیف را هر ۵ ثانیه دوباره بفرست تا مثل زنگ ممتد، هر بار صدا و لرزش بدهد */
+  CALL.pushT = setInterval(() => { if (CALL && CALL.status === 'ringing') pushApi('call', CALL.id); }, 5000);
   CALL.missT = setTimeout(async () => { if (CALL && CALL.status === 'ringing') { await rpcUpd('missed'); pushApi('cancel', CALL?.id); } }, 45000);
 }
 function showIncoming(row) {
@@ -528,7 +542,7 @@ async function hangup() {
 function toggleMute() { if (!CALL?.stream) return; CALL.muted = !CALL.muted; CALL.stream.getAudioTracks().forEach(t => t.enabled = !CALL.muted); renderCallUI(); }
 function cleanup() {
   stopRing();
-  if (CALL) { clearTimeout(CALL.missT); clearInterval(CALL.tick); try { CALL.pc?.close(); } catch { } CALL.stream?.getTracks().forEach(t => t.stop()); if (CALL.ch) sb.removeChannel(CALL.ch); }
+  if (CALL) { clearTimeout(CALL.missT); clearInterval(CALL.tick); clearInterval(CALL.pushT); try { CALL.pc?.close(); } catch { } CALL.stream?.getTracks().forEach(t => t.stop()); if (CALL.ch) sb.removeChannel(CALL.ch); }
   $('#remoteAudio').srcObject = null; CALL = null; renderCallUI();
   loadCalls().then(() => { if (S.tab === 'call' && S.sub.call === 'recent' && !$('#sheetBg').classList.contains('show')) render(); });
 }
