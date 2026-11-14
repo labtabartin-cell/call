@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<title>امون تماس</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+<style>
+:root{--bg:#0b1220;--card:#131c2e;--card2:#1a2540;--line:#243253;--tx:#e8eefc;--mut:#8fa0c4;--acc:#2dd4bf;--red:#f43f5e;--grn:#22c55e;--warn:#f59e0b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font-family:Vazirmatn,Tahoma,"Segoe UI",system-ui,sans-serif;font-size:15px}
+#app{max-width:480px;margin:0 auto;height:100%;display:flex;flex-direction:column;position:relative}
+header{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);padding-top:max(12px,env(safe-area-inset-top))}
+header .logo{font-weight:800;font-size:17px;color:var(--acc)}
+header .grow{flex:1}
+.lineSel{background:var(--card);border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:7px 10px;font:inherit;font-size:13px;max-width:170px}
+.ib{background:var(--card);border:1px solid var(--line);color:var(--tx);border-radius:10px;width:38px;height:38px;font-size:17px;cursor:pointer}
+main{flex:1;overflow-y:auto;padding:14px}
+nav{display:flex;border-top:1px solid var(--line);background:var(--card);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:0;color:var(--mut);padding:10px 0 8px;font:inherit;font-size:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button .i{font-size:20px}
+nav button.on{color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.row{display:flex;align-items:center;gap:10px}
+.grow{flex:1;min-width:0}
+.mut{color:var(--mut);font-size:13px}
+.ltr{direction:ltr;unicode-bidi:embed;display:inline-block}
+input,select,textarea{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:11px 12px;font:inherit;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--acc)}
+.btn{background:var(--acc);color:#04201d;border:0;border-radius:12px;padding:12px 16px;font:inherit;font-weight:700;cursor:pointer;width:100%}
+.btn.sec{background:var(--card2);color:var(--tx);border:1px solid var(--line)}
+.btn.red{background:var(--red);color:#fff}
+.btn.sm{width:auto;padding:7px 12px;font-size:13px;border-radius:9px}
+.disp{font-size:28px;text-align:center;min-height:48px;letter-spacing:1px;direction:ltr;padding:10px 0;word-break:break-all}
+.disp small{display:block;font-size:12px;color:var(--mut);letter-spacing:0}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;direction:ltr;max-width:320px;margin:6px auto 12px}
+.pad button{height:62px;border-radius:50%;background:var(--card);border:1px solid var(--line);color:var(--tx);font-size:24px;cursor:pointer}
+.pad button:active{background:var(--card2)}
+.pad .call{background:var(--grn);border:0;color:#fff;font-size:26px}
+.pad .del{font-size:20px;color:var(--mut)}
+.avatar{width:42px;height:42px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--acc);flex:none}
+.tag{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--card2);color:var(--mut)}
+.red{color:var(--red)}.grn{color:var(--grn)}
+.bubbles{display:flex;flex-direction:column;gap:6px;padding-bottom:6px}
+.bub{max-width:80%;padding:8px 12px;border-radius:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.bub.me{align-self:flex-start;background:var(--acc);color:#04201d;border-bottom-right-radius:4px}
+.bub.th{align-self:flex-end;background:var(--card2);border-bottom-left-radius:4px}
+.bub time{display:block;font-size:10px;opacity:.65;margin-top:2px}
+#sheetBg{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end;justify-content:center;z-index:30}
+#sheetBg.show{display:flex}
+#sheet{background:var(--card);border-radius:20px 20px 0 0;padding:18px;width:100%;max-width:480px;max-height:85vh;overflow:auto;padding-bottom:max(18px,env(safe-area-inset-bottom))}
+#sheet h3{margin:0 0 6px}
+#callUI{position:fixed;inset:0;background:linear-gradient(#0b1220,#101a33);z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:20px}
+#callUI.show{display:flex}
+.cavatar{width:110px;height:110px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:44px;color:var(--acc);margin-bottom:12px}
+.cstat{margin:14px 0 30px;font-size:18px;color:var(--acc);min-height:28px}
+.cbtns{display:flex;gap:26px}
+.cb{width:68px;height:68px;border-radius:50%;border:0;font-size:26px;cursor:pointer;color:#fff;background:var(--card2)}
+.cb.on{background:#fff;color:#000}.cb.r{background:var(--red)}.cb.g{background:var(--grn)}
+.cbl{font-size:12px;color:var(--mut);margin-top:6px}
+#toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:#fff;color:#111;padding:10px 16px;border-radius:12px;font-size:14px;z-index:99;display:none;max-width:90%;text-align:center}
+.auth{padding:30px 20px;display:flex;flex-direction:column;gap:12px;justify-content:center;height:100%}
+.auth h1{margin:0;color:var(--acc);text-align:center}
+.seg{display:flex;background:var(--card);border-radius:12px;padding:4px}
+.seg button{flex:1;background:none;border:0;color:var(--mut);padding:9px;border-radius:9px;font:inherit;cursor:pointer}
+.seg button.on{background:var(--card2);color:var(--tx)}
+.empty{text-align:center;color:var(--mut);padding:30px 10px}
+a{color:var(--acc)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="sheetBg"><div id="sheet"></div></div>
+<div id="callUI"></div>
+<div id="toast"></div>
+<audio id="remoteAudio" autoplay playsinline></audio>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+/* ============ تنظیمات ============ */
+const SB_URL = 'https://pqfeqweoxpqrrnlmngmd.supabase.co';
+const SB_KEY = 'sb_publishable_ef-EOvmOOispUBMlv9Esfw_R6cFIBPB';
+const MARKET_URL = 'amoon-market.html';
+const ICE = { iceServers: [
+  { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+  { urls: 'stun:stun.cloudflare.com:3478' }
+]};
+
+const sb = supabase.createClient(SB_URL, SB_KEY);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtNum = n => String(n).replace(/^(\d{4})(\d{3})(\d{4})$/, '$1 $2 $3');
+const isNum = n => /^08\d{9}$/.test(n);
+const ERR = {
+  not_authenticated:'ابتدا وارد شوید', invalid:'شماره یا کد نادرست است', locked:'به‌دلیل تلاش‌های ناموفق، موقتاً قفل شد؛ بعداً دوباره امتحان کنید',
+  sender_number_not_active:'شماره فرستنده فعال نیست', unknown_destination:'این شماره در شبکه ثبت نشده است',
+  cannot_call_self:'نمی‌توانید به خودتان زنگ بزنید', invalid_transition:'وضعیت تماس تغییر کرده است', empty_message:'پیام خالی است',
+  username_taken:'این نام کاربری قبلاً گرفته شده', invalid_username:'نام کاربری: ۳ تا ۲۰ حرف انگلیسی کوچک/عدد/_',
+  invalid_password:'رمز عبور حداقل ۶ نویسه باشد', 'Invalid login credentials':'نام کاربری یا رمز عبور اشتباه است', signup_failed:'ثبت‌نام انجام نشد'
+};
+const errText = e => ERR[String(e?.message || e || '').trim()] || (e?.message || 'خطا');
+let toastT;
+function toast(m){ const t=$('#toast'); t.textContent=m; t.style.display='block'; clearTimeout(toastT); toastT=setTimeout(()=>t.style.display='none',3200); }
+const tm = d => new Date(d).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
+const dt = d => new Date(d).toLocaleDateString('fa-IR',{month:'short',day:'numeric'});
+
+const S = { user:null, tab:'dial', lines:[], line:localStorage.getItem('amoon_line'), contacts:[], messages:[], calls:[], dial:'', thread:null };
+let CALL = null, feeds = [];
+
+/* ============ شروع ============ */
+(async function init(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if (session) await boot(session.user); else renderAuth();
+  sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') { S.user=null; feeds.forEach(c=>sb.removeChannel(c)); feeds=[]; renderAuth(); } });
+})();
+
+async function boot(user){
+  S.user = user;
+  await Promise.all([loadLines(), loadContacts(), loadMessages(), loadCalls()]);
+  subscribe();
+  render();
+}
+
+/* ============ احراز هویت ============ */
+let authMode = 'login';
+function renderAuth(){
+  $('#app').innerHTML = `<div class="auth">
+    <h1>📞 امون تماس</h1>
+    <div class="mut" style="text-align:center">تماس صوتی و پیامک روی شماره‌های ۰۸ شبکه امون</div>
+    <div class="seg"><button data-act="authMode" data-m="login" class="${authMode==='login'?'on':''}">ورود</button><button data-act="authMode" data-m="register" class="${authMode==='register'?'on':''}">ثبت‌نام</button></div>
+    <form data-form="auth" style="display:flex;flex-direction:column;gap:10px">
+      <input name="u" placeholder="نام کاربری (انگلیسی)" autocapitalize="off" autocomplete="username" dir="ltr" required>
+      <input name="p" type="password" placeholder="رمز عبور" autocomplete="${authMode==='login'?'current-password':'new-password'}" dir="ltr" required>
+      <button class="btn">${authMode==='login'?'ورود':'ساخت حساب'}</button>
+    </form>
+    <div class="mut" style="text-align:center">حساب شما با اپ «بازار امون» مشترک است. <a href="${MARKET_URL}">رفتن به بازار شماره</a></div>
+  </div>`;
+}
+async function doAuth(u, p){
+  u = u.trim().toLowerCase();
+  try {
+    if (authMode === 'register') {
+      const r = await fetch(`${SB_URL}/functions/v1/register`, { method:'POST', headers:{'Content-Type':'application/json', apikey:SB_KEY}, body:JSON.stringify({username:u, password:p}) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || 'signup_failed');
+    }
+    const { data, error } = await sb.auth.signInWithPassword({ email: `${u}@amoon.app`, password: p });
+    if (error) throw error;
+    await boot(data.user);
+  } catch (e) { toast(errText(e)); }
+}
+
+/* ============ بارگذاری داده‌ها ============ */
+async function loadLines(){
+  const { data } = await sb.from('numbers').select('id,number,tier').eq('active_user_id', S.user.id).order('activated_at');
+  S.lines = data || [];
+  if (!S.lines.find(l => l.number === S.line)) S.line = S.lines[0]?.number || null;
+  if (S.line) localStorage.setItem('amoon_line', S.line); else localStorage.removeItem('amoon_line');
+}
+async function loadContacts(){ const { data } = await sb.from('contacts').select('*').order('name'); S.contacts = data || []; }
+async function loadMessages(){ const { data } = await sb.from('messages').select('*').order('created_at',{ascending:false}).limit(500); S.messages = data || []; }
+async function loadCalls(){ const { data } = await sb.from('calls').select('*').order('created_at',{ascending:false}).limit(60); S.calls = data || []; }
+const nameOf = n => S.contacts.find(c => c.number === n)?.name || fmtNum(n);
+
+/* ============ رندر اصلی ============ */
+const TABS = [['dial','🔢','شماره‌گیر'],['contacts','👥','مخاطبین'],['msgs','💬','پیام‌ها'],['recent','🕘','اخیر']];
+function render(){
+  if (!S.user) return renderAuth();
+  const lineSel = S.lines.length
+    ? `<select class="lineSel" data-act="pickLine">${S.lines.map(l=>`<option value="${l.number}" ${l.number===S.line?'selected':''}>${fmtNum(l.number)}</option>`).join('')}</select>`
+    : `<button class="btn sm" data-act="openAct">فعال‌سازی شماره</button>`;
+  let view = '';
+  if (S.tab==='dial') view = viewDial(); else if (S.tab==='contacts') view = viewContacts();
+  else if (S.tab==='msgs') view = S.thread ? viewChat() : viewThreads(); else view = viewRecent();
+  $('#app').innerHTML = `<header><span class="logo">امون تماس</span><span class="grow"></span>${lineSel}<button class="ib" data-act="settings" title="تنظیمات">⚙️</button></header>
+    <main id="main">${view}</main>
+    <nav>${TABS.map(t=>`<button class="${S.tab===t[0]?'on':''}" data-act="tab" data-t="${t[0]}"><span class="i">${t[1]}</span>${t[2]}</button>`).join('')}</nav>`;
+  if (S.tab==='msgs' && S.thread) { const m=$('#main'); m.scrollTop=m.scrollHeight; }
+}
+
+function viewDial(){
+  const d = S.dial, valid = isNum(d);
+  const keys = ['1','2','3','4','5','6','7','8','9','*','0','#'];
+  return `<div class="disp">${d ? esc(d) : '<span class="mut" style="font-size:16px">شماره را وارد کنید</span>'}
+      <small>${valid ? esc(nameOf(d)) : (d==='#26*' ? 'کد فعال‌سازی شماره — دکمه تماس را بزنید' : '')}</small></div>
+    <div class="pad">${keys.map(k=>`<button data-act="key" data-k="${k}">${k}</button>`).join('')}
+      <button class="del" data-act="back">⌫</button><button class="call" data-act="dialCall">📞</button>
+      <button data-act="saveDial" ${valid && !S.contacts.find(c=>c.number===d)?'':'disabled style="opacity:.3"'} title="ذخیره مخاطب">➕</button></div>
+    <div class="card mut">برای فعال‌سازی شماره‌ای که از «بازار امون» خریده‌اید، <b class="ltr">#26*</b> را شماره‌گیری کنید.
+      ${S.lines.length ? '' : '<br>هنوز هیچ شماره‌ای روی این حساب فعال نیست.'}</div>
+    <a class="btn sec" style="display:block;text-align:center;text-decoration:none" href="${MARKET_URL}">🛒 بازار و کیف پول امون</a>`;
+}
+
+function viewContacts(){
+  return `<div class="row" style="margin-bottom:10px"><b class="grow">مخاطبین (${S.contacts.length})</b><button class="btn sm" data-act="addContact">+ افزودن</button></div>` +
+  (S.contacts.length ? S.contacts.map(c=>`<div class="card row">
+      <div class="avatar">${esc(c.name.trim()[0]||'?')}</div>
+      <div class="grow"><div>${esc(c.name)}</div><div class="mut ltr">${fmtNum(c.number)}</div></div>
+      <button class="ib" data-act="callNum" data-n="${c.number}">📞</button>
+      <button class="ib" data-act="msgNum" data-n="${c.number}">💬</button>
+      <button class="ib" data-act="delContact" data-id="${c.id}">🗑</button></div>`).join('') : '<div class="empty">مخاطبی ذخیره نشده است</div>');
+}
+
+function threads(){
+  const m = new Map();
+  for (const x of S.messages) {
+    const mine = x.from_user === S.user.id;
+    const my = mine ? x.from_number : x.to_number, peer = mine ? x.to_number : x.from_number, k = my+'>'+peer;
+    if (!m.has(k)) m.set(k, { my, peer, last:x });
+  }
+  return [...m.values()];
+}
+function viewThreads(){
+  const th = threads();
+  return `<div class="row" style="margin-bottom:10px"><b class="grow">پیام‌ها</b><button class="btn sm" data-act="newChat">+ پیام جدید</button></div>` +
+   (th.length ? th.map(t=>`<div class="card row" data-act="openThread" data-my="${t.my}" data-peer="${t.peer}" style="cursor:pointer">
+      <div class="avatar">${esc((S.contacts.find(c=>c.number===t.peer)?.name||'#')[0])}</div>
+      <div class="grow"><div class="row"><b class="grow">${esc(nameOf(t.peer))}</b><span class="mut">${tm(t.last.created_at)}</span></div>
+      <div class="mut" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.last.from_user===S.user.id?'شما: ':''}${esc(t.last.body)}</div>
+      <span class="tag">خط ${fmtNum(t.my)}</span></div></div>`).join('') : '<div class="empty">پیامی وجود ندارد</div>');
+}
+function threadMsgs(){
+  const T = S.thread;
+  return S.messages.filter(x => (x.from_number===T.my && x.to_number===T.peer) || (x.from_number===T.peer && x.to_number===T.my)).slice().reverse();
+}
+function bubbles(){
+  return threadMsgs().map(x=>`<div class="bub ${x.from_user===S.user.id && x.from_number===S.thread.my?'me':'th'}">${esc(x.body)}<time>${dt(x.created_at)} ${tm(x.created_at)}</time></div>`).join('') || '<div class="empty">اولین پیام را بفرستید</div>';
+}
+function viewChat(){
+  return `<div class="row" style="margin-bottom:10px"><button class="ib" data-act="closeThread">→</button>
+    <div class="grow"><b>${esc(nameOf(S.thread.peer))}</b><div class="mut">از خط <span class="ltr">${fmtNum(S.thread.my)}</span></div></div>
+    <button class="ib" data-act="callNum" data-n="${S.thread.peer}">📞</button></div>
+    <div class="bubbles" id="bubbles">${bubbles()}</div>
+    <form data-form="send" class="row" style="position:sticky;bottom:0;background:var(--bg);padding:8px 0"><input name="b" placeholder="پیام…" autocomplete="off"><button class="btn sm" style="height:44px">ارسال</button></form>`;
+}
+function refreshChat(){
+  const b = $('#bubbles'); if (!b) return render();
+  b.innerHTML = bubbles(); const m = $('#main'); m.scrollTop = m.scrollHeight;
+}
+
+const ST = { ringing:'بی‌پاسخ', answered:'پاسخ داده شد', rejected:'رد شد', cancelled:'لغو شد', missed:'بی‌پاسخ', ended:'پایان یافت', unavailable:'در دسترس نیست' };
+function viewRecent(){
+  return `<b>تماس‌های اخیر</b><div style="height:8px"></div>` + (S.calls.length ? S.calls.map(c=>{
+    const out = c.from_user === S.user.id, peer = out ? c.to_number : c.from_number;
+    const bad = !out && ['missed','cancelled','ringing'].includes(c.status);
+    return `<div class="card row" data-act="callNum" data-n="${peer}" style="cursor:pointer"><div class="avatar">${out?'↗':(bad?'↙':'↙')}</div>
+      <div class="grow"><div class="${bad?'red':''}">${esc(nameOf(peer))}</div><div class="mut">${out?'خروجی':'ورودی'} · ${ST[c.status]||c.status}</div></div>
+      <div class="mut">${dt(c.created_at)}<br>${tm(c.created_at)}</div></div>`;
+  }).join('') : '<div class="empty">هنوز تماسی نداشته‌اید</div>');
+}
+
+/* ============ شیت ============ */
+function sheet(html){ $('#sheet').innerHTML = html; $('#sheetBg').classList.add('show'); setTimeout(()=>$('#sheet input')?.focus(), 50); }
+function closeSheet(){ $('#sheetBg').classList.remove('show'); }
+$('#sheetBg').addEventListener('click', e => { if (e.target.id === 'sheetBg') closeSheet(); });
+
+function sheetActivate1(){
+  sheet(`<h3>فعال‌سازی شماره</h3><p class="mut">شماره خریداری‌شده را وارد کنید</p>
+    <form data-form="act1" style="display:flex;flex-direction:column;gap:10px"><input name="n" inputmode="numeric" maxlength="11" placeholder="08xxxxxxxxx" dir="ltr" required><button class="btn">ادامه</button></form>`);
+}
+function sheetActivate2(n){
+  sheet(`<h3>کد فعال‌سازی</h3><p class="mut">کد فعال‌سازی شماره <span class="ltr">${fmtNum(n)}</span> را وارد کنید</p>
+    <form data-form="act2" data-n="${n}" style="display:flex;flex-direction:column;gap:10px"><input name="c" inputmode="numeric" maxlength="6" placeholder="------" dir="ltr" required><button class="btn">فعال‌سازی</button></form>`);
+}
+function sheetSettings(){
+  sheet(`<h3>خطوط من</h3>` + (S.lines.length ? S.lines.map(l=>`<div class="card row"><div class="grow"><span class="ltr">${fmtNum(l.number)}</span> <span class="tag">${l.tier}</span></div>
+      <button class="btn sm sec" data-act="deact" data-id="${l.id}">غیرفعال</button></div>`).join('') : '<div class="mut">شماره فعالی ندارید.</div>') +
+    `<button class="btn sec" style="margin:8px 0" data-act="openAct">+ فعال‌سازی شماره جدید</button>
+     <div class="mut" style="margin-bottom:8px">کاربر: ${esc(S.user.email.split('@')[0])}</div>
+     <button class="btn red" data-act="logout">خروج از حساب</button>`);
+}
+
+/* ============ رویدادها ============ */
+const H = {
+  authMode: d => { authMode = d.m; renderAuth(); },
+  tab: d => { S.tab = d.t; S.thread = null; render(); },
+  key: d => { if (S.dial.length < 11 || /^[#*]/.test(S.dial)) { S.dial += d.k; render(); } },
+  back: () => { S.dial = S.dial.slice(0,-1); render(); },
+  pickLine: (d, el) => { S.line = el.value; localStorage.setItem('amoon_line', S.line); },
+  dialCall: () => {
+    if (S.dial === '#26*') { S.dial=''; render(); return sheetActivate1(); }
+    if (!isNum(S.dial)) return toast('شماره باید با ۰۸ شروع شود و ۱۱ رقم باشد');
+    placeCall(S.dial);
+  },
+  saveDial: () => addContactSheet(S.dial),
+  openAct: () => { closeSheet(); sheetActivate1(); },
+  settings: sheetSettings,
+  addContact: () => addContactSheet(''),
+  delContact: async d => { if (!confirm('این مخاطب حذف شود؟')) return; await sb.from('contacts').delete().eq('id', d.id); await loadContacts(); render(); },
+  callNum: d => placeCall(d.n),
+  msgNum: d => { const my = S.line; if (!my) return toast('ابتدا یک شماره فعال کنید'); S.tab='msgs'; S.thread={my, peer:d.n}; render(); },
+  newChat: () => {
+    if (!S.lines.length) return toast('ابتدا یک شماره فعال کنید');
+    sheet(`<h3>پیام جدید</h3><form data-form="newchat" style="display:flex;flex-direction:column;gap:10px">
+      <select name="my">${S.lines.map(l=>`<option value="${l.number}" ${l.number===S.line?'selected':''}>از خط ${fmtNum(l.number)}</option>`).join('')}</select>
+      <input name="peer" list="cl" inputmode="numeric" maxlength="11" placeholder="شماره مقصد 08xxxxxxxxx" dir="ltr" required>
+      <datalist id="cl">${S.contacts.map(c=>`<option value="${c.number}">${esc(c.name)}</option>`).join('')}</datalist><button class="btn">شروع گفتگو</button></form>`);
+  },
+  openThread: d => { S.thread = { my:d.my, peer:d.peer }; render(); },
+  closeThread: () => { S.thread = null; render(); },
+  deact: async d => { const { error } = await sb.rpc('deactivate_number', { p_number_id: d.id }); if (error) return toast(errText(error)); await loadLines(); sheetSettings(); render(); },
+  logout: async () => { closeSheet(); await sb.auth.signOut(); },
+  accept: acceptCall, reject: () => hangup(), hang: () => hangup(), mute: () => toggleMute()
+};
+function addContactSheet(n){
+  sheet(`<h3>مخاطب جدید</h3><form data-form="contact" style="display:flex;flex-direction:column;gap:10px">
+    <input name="name" placeholder="نام" maxlength="60" required><input name="n" value="${esc(n)}" inputmode="numeric" maxlength="11" placeholder="08xxxxxxxxx" dir="ltr" required><button class="btn">ذخیره</button></form>`);
+}
+document.addEventListener('click', e => { const t = e.target.closest('[data-act]'); if (t && H[t.dataset.act] && t.tagName !== 'SELECT') H[t.dataset.act](t.dataset, t); });
+document.addEventListener('change', e => { const t = e.target.closest('select[data-act]'); if (t) H[t.dataset.act](t.dataset, t); });
+document.addEventListener('submit', async e => {
+  const f = e.target.closest('form[data-form]'); if (!f) return; e.preventDefault();
+  const v = Object.fromEntries(new FormData(f)); const kind = f.dataset.form;
+  if (kind === 'auth') return doAuth(v.u, v.p);
+  if (kind === 'act1') { if (!isNum(v.n)) return toast('شماره نامعتبر است'); return sheetActivate2(v.n); }
+  if (kind === 'act2') {
+    const { data, error } = await sb.rpc('activate_number', { p_number: f.dataset.n, p_code: v.c.trim() });
+    if (error) return toast(errText(error));
+    if (!data.ok) return toast(ERR[data.error] || 'خطا');
+    closeSheet(); S.line = data.number; await loadLines(); S.line = data.number; localStorage.setItem('amoon_line', S.line); await loadMessages(); render();
+    return toast('✅ شماره فعال شد؛ حالا تماس و پیام می‌آید');
+  }
+  if (kind === 'contact') {
+    if (!isNum(v.n)) return toast('شماره باید با ۰۸ شروع شود و ۱۱ رقم باشد');
+    const { error } = await sb.from('contacts').insert({ name: v.name.trim(), number: v.n });
+    if (error) return toast(error.code === '23505' ? 'این شماره قبلاً ذخیره شده' : errText(error));
+    closeSheet(); await loadContacts(); render(); return;
+  }
+  if (kind === 'newchat') { if (!isNum(v.peer)) return toast('شماره مقصد نامعتبر است'); closeSheet(); S.thread = { my:v.my, peer:v.peer }; render(); return; }
+  if (kind === 'send') {
+    const body = v.b.trim(); if (!body) return;
+    f.reset();
+    const { data, error } = await sb.rpc('send_message', { p_from: S.thread.my, p_to: S.thread.peer, p_body: body });
+    if (error) return toast(errText(error));
+    if (!S.messages.find(x => x.id === data.id)) { await loadMessages(); refreshChat(); }
+    if (!data.delivered) toast('پیام ذخیره شد؛ گیرنده هنوز شماره را فعال نکرده');
+  }
+});
+
+/* ============ ریل‌تایم ============ */
+function subscribe(){
+  feeds.forEach(c => sb.removeChannel(c)); feeds = [];
+  feeds.push(sb.channel('calls-feed').on('postgres_changes', { event:'*', schema:'public', table:'calls' }, p => onCallRow(p.new, p.eventType)).subscribe());
+  feeds.push(sb.channel('msgs-feed').on('postgres_changes', { event:'INSERT', schema:'public', table:'messages' }, p => {
+    const x = p.new; if (S.messages.find(m => m.id === x.id)) return;
+    S.messages.unshift(x);
+    const inThread = S.tab==='msgs' && S.thread && ((x.from_number===S.thread.my && x.to_number===S.thread.peer) || (x.from_number===S.thread.peer && x.to_number===S.thread.my));
+    if (inThread) refreshChat();
+    else { if (x.to_user === S.user.id && x.from_user !== S.user.id) toast('💬 پیام جدید از ' + nameOf(x.from_number)); if (S.tab==='msgs' && !S.thread) render(); }
+  }).subscribe());
+}
+
+/* ============ تماس (WebRTC) ============ */
+let ringAC, ringT;
+function startRing(kind){
+  stopRing();
+  try {
+    ringAC = ringAC || new (window.AudioContext || window.webkitAudioContext)(); ringAC.resume();
+    const beep = () => { const o = ringAC.createOscillator(), g = ringAC.createGain(); o.frequency.value = kind==='in' ? 880 : 425; g.gain.value = .07;
+      o.connect(g); g.connect(ringAC.destination); o.start(); o.stop(ringAC.currentTime + (kind==='in' ? .45 : 1)); if (kind==='in' && navigator.vibrate) navigator.vibrate(350); };
+    beep(); ringT = setInterval(beep, kind==='in' ? 1300 : 3000);
+  } catch {}
+}
+function stopRing(){ clearInterval(ringT); ringT = null; }
+
+function renderCallUI(){
+  const el = $('#callUI');
+  if (!CALL) { el.classList.remove('show'); el.innerHTML = ''; return; }
+  el.classList.add('show');
+  const ringingIn = CALL.dir==='in' && CALL.status==='ringing';
+  const stat = CALL.status==='ringing' ? (CALL.dir==='out' ? 'در حال زنگ زدن…' : 'تماس ورودی…')
+    : (CALL.connected ? '<span id="ctimer">' + elapsed() + '</span>' : 'در حال برقراری ارتباط…');
+  el.innerHTML = `<div class="cavatar">${esc((nameOf(CALL.peer)[0]) || '#')}</div><h2 style="margin:0">${esc(nameOf(CALL.peer))}</h2>
+    <div class="mut ltr">${fmtNum(CALL.peer)}</div><div class="mut">خط شما: <span class="ltr">${fmtNum(CALL.mine)}</span></div>
+    <div class="cstat">${stat}</div>
+    <div class="cbtns">${ringingIn
+      ? `<div><button class="cb r" data-act="reject">✖</button><div class="cbl">رد</div></div><div><button class="cb g" data-act="accept">📞</button><div class="cbl">پاسخ</div></div>`
+      : `<div><button class="cb ${CALL.muted?'on':''}" data-act="mute">${CALL.muted?'🔇':'🎙'}</button><div class="cbl">بی‌صدا</div></div><div><button class="cb r" data-act="hang">📵</button><div class="cbl">پایان</div></div>`}</div>`;
+}
+function elapsed(){ const s = Math.max(0, Math.floor((Date.now() - CALL.t0) / 1000)); return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
+
+async function prepareMedia(){
+  const stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true } });
+  const pc = new RTCPeerConnection(ICE);
+  stream.getTracks().forEach(t => pc.addTrack(t, stream));
+  pc.ontrack = e => { const a = $('#remoteAudio'); a.srcObject = e.streams[0]; a.play().catch(()=>{}); };
+  pc.onicecandidate = e => { if (e.candidate && CALL?.ch) CALL.ch.send({ type:'broadcast', event:'ice', payload:e.candidate.toJSON() }); };
+  pc.onconnectionstatechange = () => {
+    if (!CALL) return;
+    if (pc.connectionState === 'connected' && !CALL.connected) { CALL.connected = true; CALL.t0 = Date.now(); renderCallUI(); CALL.tick = setInterval(() => { const t = $('#ctimer'); if (t) t.textContent = elapsed(); }, 1000); }
+    if (pc.connectionState === 'failed') { toast('ارتباط صوتی برقرار نشد (شبکه/NAT)'); hangup(); }
+  };
+  CALL.stream = stream; CALL.pc = pc; CALL.iceQ = [];
+}
+async function openChannel(id){
+  const ch = sb.channel('call:' + id, { config:{ broadcast:{ self:false } } });
+  ch.on('broadcast', { event:'offer' }, async ({ payload }) => {
+    if (!CALL?.pc) return;
+    await CALL.pc.setRemoteDescription(payload); await flushIce();
+    const ans = await CALL.pc.createAnswer(); await CALL.pc.setLocalDescription(ans);
+    ch.send({ type:'broadcast', event:'answer', payload:{ type:ans.type, sdp:ans.sdp } });
+  });
+  ch.on('broadcast', { event:'answer' }, async ({ payload }) => { if (!CALL?.pc) return; await CALL.pc.setRemoteDescription(payload); await flushIce(); });
+  ch.on('broadcast', { event:'ice' }, async ({ payload }) => {
+    if (!CALL?.pc) return;
+    if (CALL.pc.remoteDescription) { try { await CALL.pc.addIceCandidate(payload); } catch {} } else CALL.iceQ.push(payload);
+  });
+  CALL.ch = ch;
+  await new Promise((res, rej) => ch.subscribe(s => { if (s === 'SUBSCRIBED') res(); else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') rej(new Error('کانال تماس وصل نشد')); }));
+}
+async function flushIce(){ for (const c of CALL.iceQ.splice(0)) { try { await CALL.pc.addIceCandidate(c); } catch {} } }
+
+async function placeCall(to){
+  if (CALL) return toast('در حال تماس هستید');
+  if (!S.line) { toast('ابتدا یک شماره فعال کنید: #26* را شماره‌گیری کنید'); return; }
+  if (!isNum(to)) return toast('شماره نامعتبر است');
+  CALL = { dir:'out', peer:to, mine:S.line, status:'ringing' };
+  try { await prepareMedia(); } catch { CALL = null; return toast('برای تماس، دسترسی میکروفون را مجاز کنید'); }
+  const { data, error } = await sb.rpc('start_call', { p_from:S.line, p_to:to });
+  if (error) { cleanup(); return toast(errText(error)); }
+  if (data.status === 'unavailable') { cleanup(); await loadCalls(); if (S.tab==='recent') render(); return toast('شماره مورد نظر در دسترس نیست'); }
+  CALL.id = data.id;
+  try { await openChannel(CALL.id); } catch (e) { await rpcUpd('cancelled'); cleanup(); return toast(errText(e)); }
+  renderCallUI(); startRing('out');
+  CALL.missT = setTimeout(() => { if (CALL && CALL.status === 'ringing') { rpcUpd('missed'); } }, 45000);
+}
+async function acceptCall(){
+  if (!CALL || CALL.status !== 'ringing') return;
+  stopRing();
+  try { await prepareMedia(); } catch { toast('دسترسی میکروفون لازم است'); return hangup(); }
+  try { await openChannel(CALL.id); } catch (e) { toast(errText(e)); return hangup(); }
+  const { error } = await sb.rpc('update_call', { p_call_id:CALL.id, p_status:'answered' });
+  if (error) { toast(errText(error)); return cleanup(); }
+  CALL.status = 'answered'; renderCallUI();
+}
+async function rpcUpd(st){ if (!CALL?.id) return; const { error } = await sb.rpc('update_call', { p_call_id:CALL.id, p_status:st }); if (error) console.warn(error.message); }
+async function hangup(){
+  if (!CALL) return;
+  const st = CALL.status === 'answered' ? 'ended' : (CALL.dir === 'in' ? 'rejected' : 'cancelled');
+  await rpcUpd(st); cleanup();
+}
+function toggleMute(){ if (!CALL?.stream) return; CALL.muted = !CALL.muted; CALL.stream.getAudioTracks().forEach(t => t.enabled = !CALL.muted); renderCallUI(); }
+function cleanup(){
+  stopRing();
+  if (CALL) {
+    clearTimeout(CALL.missT); clearInterval(CALL.tick);
+    try { CALL.pc?.close(); } catch {}
+    CALL.stream?.getTracks().forEach(t => t.stop());
+    if (CALL.ch) sb.removeChannel(CALL.ch);
+  }
+  $('#remoteAudio').srcObject = null; CALL = null; renderCallUI();
+  loadCalls().then(() => { if (S.tab === 'recent' && !$('#sheetBg').classList.contains('show')) render(); });
+}
+async function onCallRow(row, type){
+  if (!row) return;
+  if (type === 'INSERT' && row.to_user === S.user.id && row.status === 'ringing') {
+    if (CALL) { await sb.rpc('update_call', { p_call_id:row.id, p_status:'rejected' }); return; }
+    const mine = row.to_number;
+    CALL = { id:row.id, dir:'in', peer:row.from_number, mine, status:'ringing' };
+    renderCallUI(); startRing('in'); return;
+  }
+  if (CALL && CALL.id === row.id) {
+    if (row.status === 'answered' && CALL.status === 'ringing') {
+      CALL.status = 'answered'; stopRing(); clearTimeout(CALL.missT); renderCallUI();
+      if (CALL.dir === 'out') {
+        const off = await CALL.pc.createOffer(); await CALL.pc.setLocalDescription(off);
+        CALL.ch.send({ type:'broadcast', event:'offer', payload:{ type:off.type, sdp:off.sdp } });
+      }
+    } else if (['rejected','cancelled','missed','ended'].includes(row.status)) {
+      const msg = { rejected:'تماس رد شد', cancelled:'تماس لغو شد', missed:'پاسخی داده نشد', ended:'تماس پایان یافت' }[row.status];
+      cleanup(); toast(msg);
+    }
+  } else if (type === 'UPDATE') { loadCalls().then(() => { if (S.tab === 'recent') render(); }); }
+}
+</script>
+</body>
+</html>
