@@ -2,9 +2,29 @@
 const SB_URL = 'https://pqfeqweoxpqrrnlmngmd.supabase.co';
 const SB_KEY = 'sb_publishable_ef-EOvmOOispUBMlv9Esfw_R6cFIBPB';
 const VAPID_PUB = 'BHVTq8KKHMDka3SXJ63Z0dCz10pOMiLxi4DSiTNsApTUZrvZkjBu2xdv_lhZQrkT__aglwGTZ1fnJsCuvSaYCNk';
-const ICE = { iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }, { urls: 'stun:stun.cloudflare.com:3478' }] };
+const ICE = { iceServers: [
+  { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }, { urls: 'stun:stun.cloudflare.com:3478' },
+  /* TURN عمومی رایگان برای شبکه‌هایی که اتصال مستقیم ندارند (موبایل/NAT سخت). پایدارِ تضمین‌شده نیست؛ برای استفاده‌ی جدی TURN اختصاصی بگذارید. */
+  { urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turns:openrelay.metered.ca:443?transport=tcp'], username: 'openrelayproject', credential: 'openrelayproject' }
+] };
 
 const sb = supabase.createClient(SB_URL, SB_KEY);
+const IC = p => `<svg class="ic" viewBox="0 0 24 24">${p}</svg>`;
+const PHONE = 'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z';
+const ICON = {
+  call: IC(`<path d="${PHONE}"/>`), hang: IC(`<g transform="rotate(135 12 12)"><path d="${PHONE}"/></g>`),
+  msg: IC('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/>'),
+  game: IC('<rect x="2.5" y="7" width="19" height="11" rx="5"/><path d="M8 10.5v4M6 12.5h4"/><circle cx="15.5" cy="11.5" r=".7"/><circle cx="17.5" cy="13.5" r=".7"/>'),
+  shop: IC('<path d="M4 8h16l-1.4 10.6a2 2 0 0 1-2 1.7H7.4a2 2 0 0 1-2-1.7L4 8z"/><path d="M8 8a4 4 0 0 1 8 0"/>'),
+  wallet: IC('<path d="M4 7a2 2 0 0 1 2-2h12v3"/><rect x="3" y="7" width="18" height="12" rx="3"/><circle cx="16.5" cy="13" r="1.1"/>'),
+  bell: IC('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/>'),
+  gear: IC('<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>'),
+  back: IC('<path d="M9 5l7 7-7 7"/>'), trash: IC('<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>'),
+  plus: IC('<path d="M12 5v14M5 12h14"/>'), del: IC('<path d="M21 5H9l-6 7 6 7h12z"/><path d="M13 9.5l4 5M17 9.5l-4 5"/>'),
+  mic: IC('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'),
+  micoff: IC('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M4 4l16 16"/>')
+};
+const hueOf = t => ((String(t).trim().charCodeAt(0) || 0) * 47) % 360;
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtNum = n => String(n).replace(/^(\d{4})(\d{3})(\d{4})$/, '$1 $2 $3');
@@ -24,7 +44,7 @@ const ERR = {
   insufficient_funds: 'موجودی کیف پول کافی نیست', number_not_available: 'این شماره دیگر موجود نیست', invalid_number: 'شماره نامعتبر است (۰۸ + ۹ رقم)',
   not_owner: 'این شماره مال شما نیست', already_listed: 'این شماره قبلاً در ویترین گذاشته شده', listing_unavailable: 'این آگهی دیگر فعال نیست',
   cannot_buy_own: 'نمی‌توانید شماره خودتان را بخرید', account_not_found: 'شماره حساب پیدا نشد', cannot_transfer_to_self: 'انتقال به حساب خودتان ممکن نیست',
-  invalid_amount: 'مبلغ نامعتبر است'
+  invalid_amount: 'مبلغ نامعتبر است', max_level: 'به حداکثر سطح رسیده‌اید', invalid_pick: 'انتخاب نامعتبر'
 };
 const errText = e => ERR[String(e?.message || e || '').trim()] || (e?.message || 'خطا');
 let toastT;
@@ -100,7 +120,7 @@ async function pushApi(type, id) {
 
 /* ================= احراز هویت ================= */
 function renderAuth() {
-  $('#app').innerHTML = `<div class="auth"><h1>📞 امون</h1>
+  $('#app').innerHTML = `<div class="auth"><div class="hero">${ICON.call}</div><h1>امون</h1>
     <div class="mut" style="text-align:center">تماس، پیام، شماره‌های ۰۸ و کیف پول — همه در یک برنامه</div>
     <div class="seg"><button data-act="authMode" data-m="login" class="${authMode === 'login' ? 'on' : ''}">ورود</button><button data-act="authMode" data-m="register" class="${authMode === 'register' ? 'on' : ''}">ثبت‌نام</button></div>
     <form data-form="auth" style="display:flex;flex-direction:column;gap:10px">
@@ -151,22 +171,28 @@ async function loadListings() {
 const nameOf = n => S.contacts.find(c => c.number === n)?.name || fmtNum(n);
 
 /* ================= رندر ================= */
-const NAV = [['call', '📞', 'تماس'], ['msgs', '💬', 'پیام'], ['market', '🛒', 'بازار'], ['wallet', '👛', 'کیف پول']];
+const NAV = [['call', ICON.call, 'تماس'], ['msgs', ICON.msg, 'پیام'], ['games', ICON.game, 'بازی'], ['market', ICON.shop, 'بازار'], ['wallet', ICON.wallet, 'کیف پول']];
 function render() {
   if (!S.user) return renderAuth();
   const showLine = S.tab === 'call' || S.tab === 'msgs';
   const lineSel = showLine && S.lines.length ? `<select class="lineSel" data-act="pickLine">${S.lines.map(l => `<option value="${l.number}" ${l.number === S.line ? 'selected' : ''}>${fmtNum(l.number)}</option>`).join('')}</select>` : '';
-  const bell = pushSupported() ? (Notification.permission === 'granted' ? '' : '<button class="ib" data-act="enablePush" title="فعال‌سازی اعلان">🔔</button>') : '';
+  const bell = pushSupported() ? (Notification.permission === 'granted' ? '' : `<button class="ib" data-act="enablePush" title="فعال‌سازی اعلان">${ICON.bell}</button>`) : '';
   let view = '';
   if (S.tab === 'call') view = viewCall(); else if (S.tab === 'msgs') view = S.thread ? viewChat() : viewThreads();
-  else if (S.tab === 'market') view = viewMarket(); else view = viewWallet();
-  $('#app').innerHTML = `<header><span class="logo">امون</span><span class="grow"></span>${lineSel}
-    <span class="bal" data-act="nav" data-t="wallet">🪙 ${money(S.wallet?.balance ?? 0)}</span>${bell}<button class="ib" data-act="settings">⚙️</button></header>
+  else if (S.tab === 'games') view = viewGames(); else if (S.tab === 'market') view = viewMarket(); else view = viewWallet();
+  $('#app').innerHTML = `<header class="${lineSel ? 'hasline' : ''}"><span class="logo"><i>${ICON.call}</i><em>امون</em></span><span class="grow"></span>${lineSel}
+    <span class="bal" data-act="nav" data-t="wallet"><b>ا</b><span id="balv">${money(S.wallet?.balance ?? 0)}</span></span>${bell}<button class="ib" data-act="settings">${ICON.gear}</button></header>
     <main id="main">${pushBanner()}${view}</main>
-    <nav>${NAV.map(t => `<button class="${S.tab === t[0] ? 'on' : ''}" data-act="nav" data-t="${t[0]}"><span class="i">${t[1]}</span>${t[2]}${t[0] === 'msgs' && S.unread ? `<span class="dot">${S.unread}</span>` : ''}</button>`).join('')}</nav>`;
+    <nav>${NAV.map(t => `<button class="${S.tab === t[0] ? 'on' : ''}" data-act="nav" data-t="${t[0]}">${t[1]}<span>${t[2]}</span>${t[0] === 'msgs' && S.unread ? `<span class="dot">${S.unread}</span>` : ''}</button>`).join('')}</nav>`;
   if (S.tab === 'msgs' && S.thread) { const m = $('#main'); m.scrollTop = m.scrollHeight; }
   if (S.tab === 'wallet') startGiftTimer();
+  afterRender();
 }
+function afterRender() {
+  document.querySelectorAll('.avatar').forEach(a => a.style.setProperty('--h', hueOf(a.textContent)));
+  if (typeof gameTick === 'function') gameTick(S.tab === 'games');
+}
+function setBalance(v) { if (S.wallet) S.wallet.balance = v; const e = $('#balv'); if (e) e.textContent = money(v); }
 function pushBanner() {
   if (S.tab !== 'call' || S.sub.call !== 'dial' || !S.lines.length) return '';
   if (!isSecureContext) return '<div class="banner">ℹ️ برای اعلان تماس هنگام بسته بودن برنامه، آن را روی آدرس https باز کنید.</div>';
@@ -186,15 +212,15 @@ function viewDial() {
   return `<div class="disp">${d ? esc(d) : '<span class="mut" style="font-size:16px">شماره را وارد کنید</span>'}
     <small>${valid ? esc(nameOf(d)) : (d === '#26*' ? 'فعال‌سازی شماره — دکمه تماس را بزنید' : '')}</small></div>
     <div class="pad">${keys.map(k => `<button data-act="key" data-k="${k}">${k}</button>`).join('')}
-    <button class="del" data-act="back">⌫</button><button class="call" data-act="dialCall">📞</button>
-    <button data-act="saveDial" ${valid && !S.contacts.find(c => c.number === d) ? '' : 'disabled style="opacity:.3"'}>➕</button></div>
+    <button class="del" data-act="back">${ICON.del}</button><button class="call" data-act="dialCall">${ICON.call}</button>
+    <button data-act="saveDial" ${valid && !S.contacts.find(c => c.number === d) ? '' : 'disabled style="opacity:.3"'}>${ICON.plus}</button></div>
     <div class="card mut">برای فعال‌سازی شماره‌ی خریداری‌شده <b class="ltr">#26*</b> را شماره‌گیری کنید.${S.lines.length ? '' : '<br><b style="color:var(--gold)">هنوز شماره‌ای فعال نیست.</b> از تب «بازار» یکی بخرید.'}</div>`;
 }
 function viewContacts() {
   return `<div class="row" style="margin-bottom:10px"><b class="grow">مخاطبین (${S.contacts.length})</b><button class="btn sm" data-act="addContact">+ افزودن</button></div>` +
     (S.contacts.length ? S.contacts.map(c => `<div class="card row"><div class="avatar">${esc(c.name.trim()[0] || '?')}</div>
       <div class="grow"><div>${esc(c.name)}</div><div class="mut ltr">${fmtNum(c.number)}</div></div>
-      <button class="ib" data-act="callNum" data-n="${c.number}">📞</button><button class="ib" data-act="msgNum" data-n="${c.number}">💬</button><button class="ib" data-act="delContact" data-id="${c.id}">🗑</button></div>`).join('') : '<div class="empty">مخاطبی ذخیره نشده است</div>');
+      <button class="ib" data-act="callNum" data-n="${c.number}">${ICON.call}</button><button class="ib" data-act="msgNum" data-n="${c.number}">${ICON.msg}</button><button class="ib" data-act="delContact" data-id="${c.id}">${ICON.trash}</button></div>`).join('') : '<div class="empty">مخاطبی ذخیره نشده است</div>');
 }
 const ST = { ringing: 'بی‌پاسخ', answered: 'پاسخ داده شد', rejected: 'رد شد', cancelled: 'لغو شد', missed: 'بی‌پاسخ', ended: 'پایان یافت', unavailable: 'در دسترس نیست' };
 function viewRecent() {
@@ -225,7 +251,7 @@ function viewThreads() {
 const threadMsgs = () => S.messages.filter(x => (x.from_number === S.thread.my && x.to_number === S.thread.peer) || (x.from_number === S.thread.peer && x.to_number === S.thread.my)).slice().reverse();
 const bubbles = () => threadMsgs().map(x => `<div class="bub ${x.from_user === S.user.id && x.from_number === S.thread.my ? 'me' : 'th'}">${esc(x.body)}<time>${dt(x.created_at)} ${tm(x.created_at)}</time></div>`).join('') || '<div class="empty">اولین پیام را بفرستید</div>';
 function viewChat() {
-  return `<div class="row" style="margin-bottom:10px"><button class="ib" data-act="closeThread">→</button><div class="grow"><b>${esc(nameOf(S.thread.peer))}</b><div class="mut">از خط <span class="ltr">${fmtNum(S.thread.my)}</span></div></div><button class="ib" data-act="callNum" data-n="${S.thread.peer}">📞</button></div>
+  return `<div class="row" style="margin-bottom:10px"><button class="ib" data-act="closeThread">${ICON.back}</button><div class="grow"><b>${esc(nameOf(S.thread.peer))}</b><div class="mut">از خط <span class="ltr">${fmtNum(S.thread.my)}</span></div></div><button class="ib" data-act="callNum" data-n="${S.thread.peer}">${ICON.call}</button></div>
     <div class="bubbles" id="bubbles">${bubbles()}</div>
     <form data-form="send" class="row" style="position:sticky;bottom:0;background:var(--bg);padding:8px 0"><input name="b" placeholder="پیام…" autocomplete="off"><button class="btn sm" style="height:44px">ارسال</button></form>`;
 }
@@ -266,7 +292,7 @@ function viewUsed() {
 function viewWallet() {
   const w = S.wallet; if (!w) return '<div class="empty">کیف پول پیدا نشد</div>';
   const acc = w.account_no.replace(/(\d{4})(?=\d)/g, '$1 ');
-  const KIND = { welcome: 'هدیه خوش‌آمدگویی', gift: 'هدیه روزانه', topup: 'شارژ کیف پول', transfer: 'انتقال', number_purchase: 'خرید شماره', number_sale: 'فروش شماره', market_fee: 'کارمزد بازار' };
+  const KIND = { welcome: 'هدیه خوش‌آمدگویی', gift: 'هدیه روزانه', topup: 'شارژ کیف پول', transfer: 'انتقال', number_purchase: 'خرید شماره', number_sale: 'فروش شماره', market_fee: 'کارمزد بازار', game_tap: 'ضربه‌های ماینر', game_reward: 'جایزه بازی', game_spend: 'هزینه بازی' };
   return `<div class="card"><div class="mut">موجودی</div><div class="big">🪙 ${money(w.balance)}</div><div class="mut" style="margin-top:8px">شماره حساب شما</div>
     <div class="row"><div class="acc ltr grow">${acc}</div><button class="btn sm sec" data-act="copyAcc">کپی</button></div></div>
     <div class="card"><div class="row"><div class="grow"><b>🎁 هدیه روزانه</b><div class="mut" id="giftInfo"></div></div><button class="btn sm" id="giftBtn" data-act="gift">دریافت ۱۵۰ سکه</button></div></div>
@@ -324,7 +350,9 @@ const confirmBuy = (n, p) => confirm(`خرید شماره ${fmtNum(n)} به قی
 const H = {
   authMode: d => { authMode = d.m; renderAuth(); },
   nav: async d => {
+    if (typeof flushTaps === 'function') await flushTaps();
     S.tab = d.t; if (d.t !== 'msgs') S.thread = null; render();
+    if (d.t === 'games') { await loadGame(); render(); }
     if (d.t === 'msgs') { S.unread = 0; render(); }
     if (d.t === 'market') { await loadMarketSub(); render(); } else if (d.t === 'wallet') { await loadWallet(); render(); }
   },
@@ -457,7 +485,7 @@ let titleT;
 const stopRing = () => { clearInterval(ringT); ringT = null; clearInterval(titleT); titleT = null; document.title = 'امون'; };
 /* مرورگر بدون لمس کاربر اجازه‌ی صدا نمی‌دهد؛ با اولین لمس، صدا آزاد می‌شود و اگر تماسی در حال زنگ است پخش می‌شود */
 function unlockAudio() {
-  try { ringAC = ringAC || new (window.AudioContext || window.webkitAudioContext)(); ringAC.resume().then(() => { if (CALL && CALL.status === 'ringing' && !ringT) startRing(CALL.dir); }); } catch { }
+  try { ringAC = ringAC || new (window.AudioContext || window.webkitAudioContext)(); ringAC.resume().then(() => { if (CALL && CALL.status === 'ringing' && !CALL.accepting && !ringT) startRing(CALL.dir === 'in' ? 'in' : 'out'); }); } catch { }
 }
 ['pointerdown', 'touchstart', 'keydown', 'click'].forEach(ev => document.addEventListener(ev, unlockAudio, { passive: true }));
 const elapsed = () => { const s = Math.max(0, Math.floor((Date.now() - CALL.t0) / 1000)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
@@ -465,13 +493,14 @@ const elapsed = () => { const s = Math.max(0, Math.floor((Date.now() - CALL.t0) 
 function renderCallUI() {
   const el = $('#callUI');
   if (!CALL) { el.classList.remove('show', 'ring'); el.innerHTML = ''; return; }
-  el.classList.add('show'); el.classList.toggle('ring', CALL.status === 'ringing');
+  if (CALL.status !== 'ringing' || CALL.accepting) stopRing();   /* هر وضعیتی جز «در حال زنگ» یعنی صدای زنگ باید قطع باشد */
+  el.classList.add('show'); el.classList.toggle('ring', CALL.status === 'ringing' && !CALL.accepting);
   const ringingIn = CALL.dir === 'in' && CALL.status === 'ringing';
   const stat = CALL.status === 'ringing' ? (CALL.dir === 'out' ? 'در حال زنگ زدن…' : 'تماس ورودی…') : (CALL.connected ? '<span id="ctimer">' + elapsed() + '</span>' : 'در حال برقراری ارتباط…');
-  el.innerHTML = `<div class="cavatar">${esc(nameOf(CALL.peer)[0] || '#')}</div><h2 style="margin:0">${esc(nameOf(CALL.peer))}</h2><div class="mut ltr">${fmtNum(CALL.peer)}</div>
+  el.innerHTML = `<div class="cavatar" style="--h:${hueOf(nameOf(CALL.peer))}">${esc(nameOf(CALL.peer)[0] || '#')}</div><h2 style="margin:0">${esc(nameOf(CALL.peer))}</h2><div class="mut ltr">${fmtNum(CALL.peer)}</div>
     <div class="mut">خط شما: <span class="ltr">${fmtNum(CALL.mine)}</span></div><div class="cstat">${stat}</div>
-    <div class="cbtns">${ringingIn ? `<div><button class="cb r" data-act="reject">✖</button><div class="cbl">رد</div></div><div><button class="cb g" data-act="accept">📞</button><div class="cbl">پاسخ</div></div>`
-      : `<div><button class="cb ${CALL.muted ? 'on' : ''}" data-act="mute">${CALL.muted ? '🔇' : '🎙'}</button><div class="cbl">بی‌صدا</div></div><div><button class="cb r" data-act="hang">📵</button><div class="cbl">پایان</div></div>`}</div>`;
+    <div class="cbtns">${ringingIn ? `<div><button class="cb r" data-act="reject">${ICON.hang}</button><div class="cbl">رد</div></div><div><button class="cb g" data-act="accept">${ICON.call}</button><div class="cbl">پاسخ</div></div>`
+      : `<div><button class="cb ${CALL.muted ? 'on' : ''}" data-act="mute">${CALL.muted ? ICON.micoff : ICON.mic}</button><div class="cbl">بی‌صدا</div></div><div><button class="cb r" data-act="hang">${ICON.hang}</button><div class="cbl">پایان</div></div>`}</div>`;
 }
 async function prepareMedia() {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
@@ -524,13 +553,15 @@ async function checkPending() {
 }
 async function acceptCall() {
   if (!CALL || CALL.status !== 'ringing') return;
-  CALL.accepting = true; stopRing();
+  CALL.accepting = true; stopRing(); closeCallNotifs(); renderCallUI();
   try { await prepareMedia(); } catch { toast('دسترسی میکروفون لازم است'); return hangup(); }
   try { await openChannel(CALL.id); } catch (e) { toast(errText(e)); return hangup(); }
   const { error } = await sb.rpc('update_call', { p_call_id: CALL.id, p_status: 'answered' });
   if (error) { toast(errText(error)); return cleanup(); }
-  CALL.status = 'answered'; renderCallUI();
+  CALL.status = 'answered'; renderCallUI(); armConnectTimeout();
 }
+/* اگر بعد از پاسخ ۳۰ ثانیه صدا وصل نشد، تماس را ببند تا گیر نکند */
+function armConnectTimeout() { const id = CALL?.id; setTimeout(() => { if (CALL && CALL.id === id && !CALL.connected) { toast('ارتباط صوتی برقرار نشد؛ دوباره تلاش کنید'); hangup(); } }, 30000); }
 async function rpcUpd(st) { if (!CALL?.id) return; const { error } = await sb.rpc('update_call', { p_call_id: CALL.id, p_status: st }); if (error) console.warn(error.message); }
 async function hangup() {
   if (!CALL) return;
@@ -540,8 +571,9 @@ async function hangup() {
   cleanup();
 }
 function toggleMute() { if (!CALL?.stream) return; CALL.muted = !CALL.muted; CALL.stream.getAudioTracks().forEach(t => t.enabled = !CALL.muted); renderCallUI(); }
+async function closeCallNotifs() { try { const reg = await navigator.serviceWorker?.getRegistration(); (await reg?.getNotifications() || []).filter(n => n.data?.kind === 'call').forEach(n => n.close()); } catch { } }
 function cleanup() {
-  stopRing();
+  stopRing(); closeCallNotifs();
   if (CALL) { clearTimeout(CALL.missT); clearInterval(CALL.tick); clearInterval(CALL.pushT); try { CALL.pc?.close(); } catch { } CALL.stream?.getTracks().forEach(t => t.stop()); if (CALL.ch) sb.removeChannel(CALL.ch); }
   $('#remoteAudio').srcObject = null; CALL = null; renderCallUI();
   loadCalls().then(() => { if (S.tab === 'call' && S.sub.call === 'recent' && !$('#sheetBg').classList.contains('show')) render(); });
@@ -555,7 +587,7 @@ async function onCallRow(row, type) {
   if (CALL && CALL.id === row.id) {
     if (row.status === 'answered' && CALL.status === 'ringing') {
       if (CALL.dir === 'in') { if (!CALL.accepting) { cleanup(); toast('تماس روی دستگاه دیگری پاسخ داده شد'); } return; }
-      CALL.status = 'answered'; stopRing(); clearTimeout(CALL.missT); renderCallUI();
+      CALL.status = 'answered'; stopRing(); clearTimeout(CALL.missT); clearInterval(CALL.pushT); renderCallUI(); armConnectTimeout();
       const off = await CALL.pc.createOffer(); await CALL.pc.setLocalDescription(off);
       CALL.ch.send({ type: 'broadcast', event: 'offer', payload: { type: off.type, sdp: off.sdp } });
     } else if (['rejected', 'cancelled', 'missed', 'ended'].includes(row.status)) {

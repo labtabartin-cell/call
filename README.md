@@ -2,7 +2,7 @@
 
 تماس صوتی (WebRTC)، پیام، شماره‌های ۰۸ و کیف پول در یک برنامه. بک‌اند: Supabase (دیتابیس، Realtime، Edge Functions). اعلان تماس با Web Push.
 
-- `index.html` + `app.js`: خود برنامه
+- `index.html` + `app.js` + `games.js`: خود برنامه (تماس، پیام، بازار، کیف پول، مینی‌گیم‌ها)
 - `sw.js`: سرویس‌ورکر اعلان‌ها
 - `manifest.webmanifest` و آیکن‌ها: نصب به‌صورت PWA
 
