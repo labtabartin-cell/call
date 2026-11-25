@@ -44,14 +44,16 @@ const ERR = {
   insufficient_funds: 'موجودی کیف پول کافی نیست', number_not_available: 'این شماره دیگر موجود نیست', invalid_number: 'شماره نامعتبر است (۰۸ + ۹ رقم)',
   not_owner: 'این شماره مال شما نیست', already_listed: 'این شماره قبلاً در ویترین گذاشته شده', listing_unavailable: 'این آگهی دیگر فعال نیست',
   cannot_buy_own: 'نمی‌توانید شماره خودتان را بخرید', account_not_found: 'شماره حساب پیدا نشد', cannot_transfer_to_self: 'انتقال به حساب خودتان ممکن نیست',
-  invalid_amount: 'مبلغ نامعتبر است', max_level: 'به حداکثر سطح رسیده‌اید', invalid_pick: 'انتخاب نامعتبر'
+  invalid_amount: 'مبلغ نامعتبر است', max_level: 'به حداکثر سطح رسیده‌اید', invalid_pick: 'انتخاب نامعتبر', invalid_pin: 'رمز باید دقیقاً ۴ رقم باشد', too_many_cards: 'حداکثر ۳ کارت فعال می‌توانید داشته باشید',
+  card_not_found: 'کارت پیدا نشد یا مسدود است', invalid_name: 'نام باید ۱ تا ۴۰ نویسه باشد', too_many_terminals: 'حداکثر ۳ کارتخوان می‌توانید ثبت کنید',
+  terminal_not_found: 'کارتخوان پیدا نشد', invalid_qr: 'کد کارت معتبر نیست'
 };
 const errText = e => ERR[String(e?.message || e || '').trim()] || (e?.message || 'خطا');
 let toastT;
 function toast(m) { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', 3500); }
 
 const S = {
-  user: null, tab: 'call', sub: { call: 'dial', market: 'shop' },
+  user: null, tab: 'home', sub: { call: 'dial', market: 'shop', bank: 'acct', mbank: 'card' },
   lines: [], line: localStorage.getItem('amoon_line'), contacts: [], messages: [], calls: [], dial: '', thread: null, unread: 0,
   wallet: null, tx: [], shop: [], shopTier: 'all', shopSort: 'asc', shopLimit: 30, mine: [], mineListings: {}, listings: [], showCode: {}
 };
@@ -68,7 +70,7 @@ let CALL = null, feeds = [], authMode = 'login', giftT = null;
 
 async function boot(user) {
   S.user = user;
-  await Promise.all([loadLines(), loadContacts(), loadMessages(), loadCalls(), loadWallet()]);
+  await Promise.all([loadLines(), loadContacts(), loadMessages(), loadCalls(), loadWallet(), typeof loadBank === 'function' ? loadBank() : 0]);
   subscribe(); render();
   syncPush(); checkPending();
 }
@@ -171,26 +173,30 @@ async function loadListings() {
 const nameOf = n => S.contacts.find(c => c.number === n)?.name || fmtNum(n);
 
 /* ================= رندر ================= */
-const NAV = [['call', ICON.call, 'تماس'], ['msgs', ICON.msg, 'پیام'], ['games', ICON.game, 'بازی'], ['market', ICON.shop, 'بازار'], ['wallet', ICON.wallet, 'کیف پول']];
+const NAV = [['home', IC('<path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/>'), 'خانه'], ['call', ICON.call, 'تماس'], ['msgs', ICON.msg, 'پیام'], ['games', ICON.game, 'بازی'], ['market', ICON.shop, 'بازار']];
 function render() {
   if (!S.user) return renderAuth();
+  if (typeof extHold === 'function' && extHold()) return;
+  if (S.tab === 'home') { $('#app').innerHTML = viewHome(); return afterRender(); }
   const showLine = S.tab === 'call' || S.tab === 'msgs';
   const lineSel = showLine && S.lines.length ? `<select class="lineSel" data-act="pickLine">${S.lines.map(l => `<option value="${l.number}" ${l.number === S.line ? 'selected' : ''}>${fmtNum(l.number)}</option>`).join('')}</select>` : '';
   const bell = pushSupported() ? (Notification.permission === 'granted' ? '' : `<button class="ib" data-act="enablePush" title="فعال‌سازی اعلان">${ICON.bell}</button>`) : '';
+  const ev = typeof extView === 'function' ? extView(S.tab) : null;
   let view = '';
   if (S.tab === 'call') view = viewCall(); else if (S.tab === 'msgs') view = S.thread ? viewChat() : viewThreads();
-  else if (S.tab === 'games') view = viewGames(); else if (S.tab === 'market') view = viewMarket(); else view = viewWallet();
+  else if (S.tab === 'games') view = viewGames(); else if (S.tab === 'market') view = viewMarket(); else if (ev != null) view = ev; else view = viewWallet();
   $('#app').innerHTML = `<header class="${lineSel ? 'hasline' : ''}"><span class="logo"><i>${ICON.call}</i><em>امون</em></span><span class="grow"></span>${lineSel}
-    <span class="bal" data-act="nav" data-t="wallet"><b>ا</b><span id="balv">${money(S.wallet?.balance ?? 0)}</span></span>${bell}<button class="ib" data-act="settings">${ICON.gear}</button></header>
+    <span class="bal" data-act="nav" data-t="bank"><b>ا</b><span id="balv">${money(S.wallet?.balance ?? 0)}</span></span>${bell}<button class="ib" data-act="settings">${ICON.gear}</button></header>
     <main id="main">${pushBanner()}${view}</main>
     <nav>${NAV.map(t => `<button class="${S.tab === t[0] ? 'on' : ''}" data-act="nav" data-t="${t[0]}">${t[1]}<span>${t[2]}</span>${t[0] === 'msgs' && S.unread ? `<span class="dot">${S.unread}</span>` : ''}</button>`).join('')}</nav>`;
   if (S.tab === 'msgs' && S.thread) { const m = $('#main'); m.scrollTop = m.scrollHeight; }
-  if (S.tab === 'wallet') startGiftTimer();
+  if (S.tab === 'wallet' || (S.tab === 'bank' && S.sub.bank === 'acct')) startGiftTimer();
   afterRender();
 }
 function afterRender() {
   document.querySelectorAll('.avatar').forEach(a => a.style.setProperty('--h', hueOf(a.textContent)));
   if (typeof gameTick === 'function') gameTick(S.tab === 'games');
+  if (typeof extAfter === 'function') extAfter();
 }
 function setBalance(v) { if (S.wallet) S.wallet.balance = v; const e = $('#balv'); if (e) e.textContent = money(v); }
 function pushBanner() {
@@ -350,11 +356,13 @@ const confirmBuy = (n, p) => confirm(`خرید شماره ${fmtNum(n)} به قی
 const H = {
   authMode: d => { authMode = d.m; renderAuth(); },
   nav: async d => {
+    if (d.t === 'wallet') d = { t: 'bank' };
     if (typeof flushTaps === 'function') await flushTaps();
     S.tab = d.t; if (d.t !== 'msgs') S.thread = null; render();
     if (d.t === 'games') { await loadGame(); render(); }
     if (d.t === 'msgs') { S.unread = 0; render(); }
     if (d.t === 'market') { await loadMarketSub(); render(); } else if (d.t === 'wallet') { await loadWallet(); render(); }
+    if (typeof onNavExt === 'function') await onNavExt(d.t);
   },
   subCall: d => { S.sub.call = d.s; render(); },
   subMarket: async d => { S.sub.market = d.s; render(); await loadMarketSub(); render(); },
